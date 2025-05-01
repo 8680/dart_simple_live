@@ -1,9 +1,9 @@
 <p align="center">
     <img width="128" src="/assets/logo.png" alt="Simple Live logo">
 </p>
-<h1 align="center">Simple Live</h1>
+<h1 align="center">Simple Live二改</h1>
 <p align="center">
-    <em>简简单单的看直播</em>
+    <em>目前支持Android、iOS、Windows系统</em>
 </p>
 
 ---
