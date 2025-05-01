@@ -30,6 +30,7 @@ class FollowUserItem extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
+      color: playing ? Colors.blue.withOpacity(0.1) : null,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
@@ -95,34 +96,6 @@ class FollowUserItem extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        
-                        // 平台图标
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Image.asset(
-                                site.logo,
-                                width: 14,
-                                height: 14,
-                              ),
-                              AppStyle.hGap4,
-                              Text(
-                                site.name.substring(0, 2),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                     
@@ -130,35 +103,69 @@ class FollowUserItem extends StatelessWidget {
                     
                     // 直播状态
                     Obx(
-                      () => AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: Container(
-                          key: ValueKey<int>(item.liveStatus.value),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(item.liveStatus.value, theme),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _getStatusIcon(item.liveStatus.value),
-                                size: 14,
-                                color: _getStatusIconColor(item.liveStatus.value, theme),
+                      () => Row(
+                        children: [
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: Container(
+                              key: ValueKey<int>(item.liveStatus.value),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(item.liveStatus.value, theme),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              AppStyle.hGap4,
-                              Text(
-                                _getStatus(item.liveStatus.value),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: _getStatusIconColor(item.liveStatus.value, theme),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getStatusIcon(item.liveStatus.value),
+                                    size: 14,
+                                    color: _getStatusIconColor(item.liveStatus.value, theme),
+                                  ),
+                                  AppStyle.hGap4,
+                                  Text(
+                                    _getStatus(item.liveStatus.value),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: _getStatusIconColor(item.liveStatus.value, theme),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          
+                          AppStyle.hGap8,
+                          
+                          // 平台图标
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  site.logo,
+                                  width: 14,
+                                  height: 14,
                                 ),
-                              ),
-                            ],
+                                AppStyle.hGap4,
+                                Text(
+                                  site.name.substring(0, 2),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ],
@@ -167,21 +174,7 @@ class FollowUserItem extends StatelessWidget {
               
               // 操作按钮
               if (playing)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    "正在观看",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                )
+                Container()
               else if (onRemove != null)
                 IconButton(
                   onPressed: onRemove,

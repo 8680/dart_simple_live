@@ -57,7 +57,7 @@ class AppStyle {
     scaffoldBackgroundColor: Colors.white,
     
     // 卡片样式
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.cardColor,
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -113,7 +113,7 @@ class AppStyle {
     ),
     
     // TabBar样式
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: AppColors.primaryColor,
       unselectedLabelColor: AppColors.secondaryTextColor,
       indicatorSize: TabBarIndicatorSize.label,
@@ -168,7 +168,7 @@ class AppStyle {
     scaffoldBackgroundColor: AppColors.darkColorScheme.background,
     
     // 卡片样式
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.darkColorScheme.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -225,7 +225,7 @@ class AppStyle {
     ),
     
     // TabBar样式
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: AppColors.primaryColor,
       unselectedLabelColor: Colors.white70,
       indicatorSize: TabBarIndicatorSize.label,

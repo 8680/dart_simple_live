@@ -1,7 +1,7 @@
 {
-    "version": "1.8.2",
-    "version_num": 10802,
-    "version_desc": "- 更新版本号",
+    "version": "1.8.3",
+    "version_num": 10803,
+    "version_desc": "- 优化用户界面显示效果\n- 升级并优化软件依赖包版本",
     "prerelease":false,
     "download_url": "https://github.com/8680/dart_simple_live/releases"
 }

@@ -17,7 +17,7 @@ jobs:
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
-        distribution: 'zulu' # 或其他 JDK 发行版
+        distribution: 'temurin' # 或其他 JDK 发行版
         java-version: '17' # Flutter 需要的 JDK 版本
         cache: "gradle"
 
@@ -26,6 +26,7 @@ jobs:
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.29.3'
+        channel: 'stable '
         cache: true
 
     - name: Get Flutter dependencies
