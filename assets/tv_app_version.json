@@ -1,7 +1,0 @@
-{
-    "version": "1.3.2",
-    "version_num": 10302,
-    "version_desc": "- 修复虎牙播放中断 #700 @SlotSun",
-    "prerelease":true,
-    "download_url": "https://github.com/xiaoyaocz/dart_simple_live/releases"
-}
