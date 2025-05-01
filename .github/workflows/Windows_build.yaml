@@ -1,0 +1,84 @@
+name: Windows_build
+
+on:
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  # 打包Windows
+  build-windows:
+    runs-on: windows-2025
+    permissions:
+      contents: write
+    steps:
+      # 签出代码
+      - uses: actions/checkout@v4
+      
+      # 设置Flutter环境
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.29.3"
+          cache: true
+      - name: Enable Flutter Desktop
+        run: flutter config --enable-windows-desktop
+      - name: Restore Packages
+        run: |
+          cd simple_live_app
+          flutter pub get
+          
+          # 设置版本号和日期作为环境变量
+          $version = (Get-Content pubspec.yaml | Select-String 'version:' | ForEach-Object { $_.ToString().Split(' ')[1].Split('+')[0] })
+          echo "APP_VERSION=$version" >> $env:GITHUB_ENV
+          echo "BUILD_DATE=$(Get-Date -Format 'yyyyMMdd')" >> $env:GITHUB_ENV
+          
+      # 设置flutter_fastforge环境
+      - name: Install flutter_fastforge
+        run: dart pub global activate fastforge
+        
+      # build Windows ZIP\MSIX
+      - name: Build Windows
+        run: |
+          cd simple_live_app
+          fastforge package --platform windows --targets msix,zip --skip-clean
+          
+      # 上传Windows至Artifacts
+      - name: Upload Windows APP to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            simple_live_app/build/dist/*/*.msix
+            simple_live_app/build/dist/*/*.zip
+          
+      # 复制并重命名文件以包含版本号
+      - name: Rename Files with Version
+        run: |
+          cd simple_live_app
+          $msixFile = Get-ChildItem -Path build/dist/*/*.msix | Select-Object -First 1
+          $zipFile = Get-ChildItem -Path build/dist/*/*.zip | Select-Object -First 1
+          
+          # 创建目标目录
+          mkdir -Force build/releases
+          
+          # 复制并重命名文件
+          Copy-Item $msixFile.FullName "build/releases/SimpleLive-$env:APP_VERSION-windows.msix"
+          Copy-Item $zipFile.FullName "build/releases/SimpleLive-$env:APP_VERSION-windows.zip"
+      
+      # 创建GitHub Release并上传Windows文件
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.APP_VERSION }}-Windows-${{ env.BUILD_DATE }}
+          name: SimpleLive Windows v${{ env.APP_VERSION }} (${{ env.BUILD_DATE }})
+          draft: false
+          prerelease: false
+          files: |
+            simple_live_app/build/releases/SimpleLive-${{ env.APP_VERSION }}-windows.msix
+            simple_live_app/build/releases/SimpleLive-${{ env.APP_VERSION }}-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            
+        #完成
+      - run: echo "🍏 Windows job's status is ${{ job.status }}."
+      

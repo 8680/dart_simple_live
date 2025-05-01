@@ -1,0 +1,110 @@
+# .github/workflows/Android_build.yml
+name: Android_build
+
+on:
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build:
+    name: Build Android App
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 设置 Java 环境
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu' # 或其他 JDK 发行版
+        java-version: '17' # Flutter 需要的 JDK 版本
+        cache: "gradle"
+
+    # 设置Flutter
+    - name: Flutter action
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.29.3'
+        cache: true
+
+    - name: Get Flutter dependencies
+      run: |
+        cd simple_live_app
+        flutter pub get # 下载项目依赖
+
+    # 设置 flutter_distributor 环境
+    - name: Install flutter_distributor
+      run: dart pub global activate flutter_distributor
+      
+    #APK签名设置
+    - name: Generate Random Keystore
+      run: |
+        # 创建密钥库目录
+        mkdir -p simple_live_app/android/keystore
+        
+        # 配置秘钥
+        STORE_PASSWORD="${{ secrets.STORE_PASSWORD }}"
+        KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}"
+        KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
+        
+        # 生成密钥库
+        keytool -genkeypair \
+        -keystore simple_live_app/android/keystore/keystore.jks \
+        -alias $KEY_ALIAS \
+        -keyalg RSA \
+        -keysize 2048 \
+        -validity 9125 \
+        -storepass $STORE_PASSWORD \
+        -keypass $KEY_PASSWORD \
+        -dname "CN=Simple Live,OU=Android,O=Android,L=Android,S=Android,C=US" \
+        -storetype JKS
+        
+        # 创建key.properties文件到指定路径
+        echo "storeFile=../keystore/keystore.jks" > simple_live_app/android/key.properties
+        echo "storePassword=$STORE_PASSWORD" >> simple_live_app/android/key.properties
+        echo "keyPassword=$KEY_PASSWORD" >> simple_live_app/android/key.properties
+        echo "keyAlias=$KEY_ALIAS" >> simple_live_app/android/key.properties
+
+        # 确保keystore权限正确
+        chmod 644 simple_live_app/android/keystore/keystore.jks
+        
+    # 构建 Android APK (Release 版本)
+    - name: Build APK
+      id: build_apk
+      run: |
+        cd simple_live_app
+        flutter build apk --release --target-platform android-arm64
+        
+        # 设置版本号和日期作为环境变量
+        VERSION=$(grep 'version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+        echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+        echo "BUILD_DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+        
+        # 重命名APK文件以包含版本号
+        cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/SimpleLive-$VERSION-release.apk
+
+    # 上传 APK至 Artifacts
+    - name: Upload APK to Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk # Artifact 名称
+        # Release APK 的默认输出路径
+        path: simple_live_app/build/app/outputs/flutter-apk/*.apk
+        
+    # 创建GitHub Release并上传APK
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ env.APP_VERSION }}-${{ env.BUILD_DATE }}
+        name: SimpleLive v${{ env.APP_VERSION }} (${{ env.BUILD_DATE }})
+        draft: false
+        prerelease: false
+        files: |
+          simple_live_app/build/app/outputs/flutter-apk/SimpleLive-${{ env.APP_VERSION }}-release.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # 完成
+    - run: echo "🤖 This job's status is ${{ job.status }}."

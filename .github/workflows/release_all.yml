@@ -1,0 +1,245 @@
+name: Build All
+on:
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  # 提取版本信息
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.get_version.outputs.version }}
+      build_date: ${{ steps.get_date.outputs.date }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Get app version
+        id: get_version
+        run: |
+          VERSION=$(grep 'version:' simple_live_app/pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+      - name: Get build date
+        id: get_date
+        run: |
+          echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+  # Android构建
+  build-android:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 设置 Java 环境
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: "gradle"
+
+      # 设置Flutter
+      - name: Flutter action
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          cache: true
+
+      - name: Get Flutter dependencies
+        run: |
+          cd simple_live_app
+          flutter pub get
+
+      # 设置 flutter_distributor 环境
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+        
+      # APK签名设置
+      - name: Generate Random Keystore
+        run: |
+          # 创建密钥库目录
+          mkdir -p simple_live_app/android/keystore
+          
+          # 配置秘钥
+          STORE_PASSWORD="${{ secrets.STORE_PASSWORD }}"
+          KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}"
+          KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
+          
+          # 生成密钥库
+          keytool -genkeypair \
+          -keystore simple_live_app/android/keystore/keystore.jks \
+          -alias $KEY_ALIAS \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 9125 \
+          -storepass $STORE_PASSWORD \
+          -keypass $KEY_PASSWORD \
+          -dname "CN=Simple Live,OU=Android,O=Android,L=Android,S=Android,C=US" \
+          -storetype JKS
+          
+          # 创建key.properties文件到指定路径
+          echo "storeFile=../keystore/keystore.jks" > simple_live_app/android/key.properties
+          echo "storePassword=$STORE_PASSWORD" >> simple_live_app/android/key.properties
+          echo "keyPassword=$KEY_PASSWORD" >> simple_live_app/android/key.properties
+          echo "keyAlias=$KEY_ALIAS" >> simple_live_app/android/key.properties
+
+          # 确保keystore权限正确
+          chmod 644 simple_live_app/android/keystore/keystore.jks
+          
+      # 构建 Android APK
+      - name: Build APK
+        run: |
+          cd simple_live_app
+          flutter build apk --release --target-platform android-arm64
+          
+          # 重命名APK文件以包含版本号
+          VERSION=${{ needs.prepare.outputs.app_version }}
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/SimpleLive-$VERSION-android.apk
+
+      # 上传构建结果至 Artifacts
+      - name: Upload APK to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: simple_live_app/build/app/outputs/flutter-apk/SimpleLive-${{ needs.prepare.outputs.app_version }}-android.apk
+          retention-days: 1
+
+  # iOS构建
+  build-ios:
+    needs: prepare
+    runs-on: macos-15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 设置Flutter
+      - name: Flutter action
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          cache: true 
+
+      - name: Get Flutter dependencies
+        run: |
+          cd simple_live_app
+          flutter pub get
+           
+      # 设置flutter_distributor环境
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      # 打包iOS
+      - name: Build IPA
+        run: |
+          cd simple_live_app
+          flutter build ios --release --no-codesign
+
+      # 创建未签名ipa
+      - name: Create IPA
+        run: |
+          cd simple_live_app
+          mkdir build/ios/iphoneos/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/Runner.app
+          cd build/ios/iphoneos/
+          zip -q -r ios_no_sign.ipa Payload
+          
+          # 重命名IPA文件以包含版本号
+          VERSION=${{ needs.prepare.outputs.app_version }}
+          cp ios_no_sign.ipa SimpleLive-$VERSION-ios.ipa
+          cd ../../..
+
+      # 上传构建结果至 Artifacts
+      - name: Upload IPA to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: simple_live_app/build/ios/iphoneos/SimpleLive-${{ needs.prepare.outputs.app_version }}-ios.ipa
+          retention-days: 1
+
+  # Windows构建
+  build-windows:
+    needs: prepare
+    runs-on: windows-2025
+    steps:
+      # 签出代码
+      - uses: actions/checkout@v4
+      
+      # 设置Flutter环境
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.29.3"
+          cache: true
+          
+      - name: Enable Flutter Desktop
+        run: flutter config --enable-windows-desktop
+        
+      - name: Restore Packages
+        run: |
+          cd simple_live_app
+          flutter pub get
+          
+      # 设置flutter_fastforge环境
+      - name: Install flutter_fastforge
+        run: dart pub global activate fastforge
+        
+      # build Windows ZIP\MSIX
+      - name: Build Windows
+        run: |
+          cd simple_live_app
+          fastforge package --platform windows --targets msix,zip --skip-clean
+      
+      # 复制并重命名文件以包含版本号
+      - name: Rename Files with Version
+        run: |
+          cd simple_live_app
+          $msixFile = Get-ChildItem -Path build/dist/*/*.msix | Select-Object -First 1
+          $zipFile = Get-ChildItem -Path build/dist/*/*.zip | Select-Object -First 1
+          
+          # 创建目标目录
+          mkdir -Force build/releases
+          
+          # 复制并重命名文件
+          Copy-Item $msixFile.FullName "build/releases/SimpleLive-${{ needs.prepare.outputs.app_version }}-windows.msix"
+          Copy-Item $zipFile.FullName "build/releases/SimpleLive-${{ needs.prepare.outputs.app_version }}-windows.zip"
+      
+      # 上传Windows至Artifacts
+      - name: Upload Windows APP to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            simple_live_app/build/releases/SimpleLive-${{ needs.prepare.outputs.app_version }}-windows.msix
+            simple_live_app/build/releases/SimpleLive-${{ needs.prepare.outputs.app_version }}-windows.zip
+          retention-days: 1
+
+  # 创建Release并上传所有构建文件
+  create-release:
+    needs: [prepare, build-android, build-ios, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare.outputs.app_version }}-${{ needs.prepare.outputs.build_date }}
+          name: SimpleLive v${{ needs.prepare.outputs.app_version }} (${{ needs.prepare.outputs.build_date }})
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/android-build/SimpleLive-${{ needs.prepare.outputs.app_version }}-android.apk
+            artifacts/ios-build/SimpleLive-${{ needs.prepare.outputs.app_version }}-ios.ipa
+            artifacts/windows-build/SimpleLive-${{ needs.prepare.outputs.app_version }}-windows.msix
+            artifacts/windows-build/SimpleLive-${{ needs.prepare.outputs.app_version }}-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            
+      - run: echo "✅ All platforms built and released successfully!" 
