@@ -1,7 +1,7 @@
 {
     "version": "1.8.4",
     "version_num": 10804,
-    "version_desc": "- 活体检测: )",
+    "version_desc": "- 用户不活动检测\n- Windows版添加滚轮调节音量",
     "prerelease":false,
     "download_url": "https://github.com/8680/dart_simple_live/releases"
 }

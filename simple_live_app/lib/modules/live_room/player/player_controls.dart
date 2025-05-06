@@ -129,20 +129,27 @@ Widget buildFullControls(
               onHover: (PointerHoverEvent event) {
                 controller.onHover(event, videoState.context);
               },
-              child: Container(
-                width: double.infinity,
-                height: double.infinity,
-                color: Colors.transparent,
-                // child: Visibility(
-                //   //拖拽区域
-                //   visible: controller.smallWindowState.value,
-                //   child: DragToMoveArea(
-                //       child: Container(
-                //     width: double.infinity,
-                //     height: double.infinity,
-                //     color: Colors.transparent,
-                //   )),
-                // ),
+              child: Listener(
+                onPointerSignal: (PointerSignalEvent event) {
+                  if (Platform.isWindows && event is PointerScrollEvent) {
+                    controller.onMouseScroll(event);
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: Colors.transparent,
+                  // child: Visibility(
+                  //   //拖拽区域
+                  //   visible: controller.smallWindowState.value,
+                  //   child: DragToMoveArea(
+                  //       child: Container(
+                  //     width: double.infinity,
+                  //     height: double.infinity,
+                  //     color: Colors.transparent,
+                  //   )),
+                  // ),
+                ),
               ),
             ),
           ),
@@ -505,10 +512,17 @@ Widget buildControls(
           //onLongPress: controller.showDebugInfo,
           child: MouseRegion(
             onEnter: controller.onEnter,
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.transparent,
+            child: Listener(
+              onPointerSignal: (PointerSignalEvent event) {
+                if (Platform.isWindows && event is PointerScrollEvent) {
+                  controller.onMouseScroll(event);
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                color: Colors.transparent,
+              ),
             ),
           ),
         ),

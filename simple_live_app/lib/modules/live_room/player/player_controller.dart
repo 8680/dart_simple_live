@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -773,6 +774,51 @@ mixin PlayerGestureControlMixin
     verticalDragging = false;
     leftVerticalDrag = false;
     showGestureTip.value = false;
+  }
+  
+  /// 处理鼠标滚轮调节音量
+  void onMouseScroll(PointerScrollEvent event) {
+    if (lockControlsState.value && fullScreenState.value) {
+      return;
+    }
+    
+    // 负数表示向上滚动，正数表示向下滚动
+    double delta = event.scrollDelta.dy;
+    
+    // 获取当前音量
+    double currentVolume = player.state.volume;
+    
+    // 根据滚动方向调整音量，向上增加，向下减少
+    if (delta < 0) {
+      // 向上滚动，增加音量
+      currentVolume += 5;
+      if (currentVolume > 100) {
+        currentVolume = 100;
+      }
+    } else {
+      // 向下滚动，减少音量
+      currentVolume -= 5;
+      if (currentVolume < 0) {
+        currentVolume = 0;
+      }
+    }
+    
+    // 设置音量
+    player.setVolume(currentVolume);
+    AppSettingsController.instance.setPlayerVolume(currentVolume);
+    
+    // 显示音量提示
+    showGestureTip.value = true;
+    gestureTipText.value = "音量 ${currentVolume.toInt()}%";
+    
+    // 隐藏提示
+    hideSeekTipTimer?.cancel();
+    hideSeekTipTimer = Timer(const Duration(seconds: 2), () {
+      showGestureTip.value = false;
+    });
+    
+    // 重置不活动检测
+    resetUserInactivityDetection();
   }
 }
 
