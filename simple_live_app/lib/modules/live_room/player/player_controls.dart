@@ -125,10 +125,15 @@ Widget buildFullControls(
             onVerticalDragStart: controller.onVerticalDragStart,
             onVerticalDragUpdate: controller.onVerticalDragUpdate,
             onVerticalDragEnd: controller.onVerticalDragEnd,
-            child: MouseRegion(
+            child: Obx(() => MouseRegion(
               onHover: (PointerHoverEvent event) {
                 controller.onHover(event, videoState.context);
               },
+              cursor: Platform.isWindows && 
+                     controller.fullScreenState.value && 
+                     !controller.showMouseCursor.value
+                  ? SystemMouseCursors.none 
+                  : SystemMouseCursors.basic,
               child: Listener(
                 onPointerSignal: (PointerSignalEvent event) {
                   if (Platform.isWindows && event is PointerScrollEvent) {
@@ -151,7 +156,7 @@ Widget buildFullControls(
                   // ),
                 ),
               ),
-            ),
+            )),
           ),
         ),
 
@@ -510,8 +515,13 @@ Widget buildControls(
           onVerticalDragUpdate: controller.onVerticalDragUpdate,
           onVerticalDragEnd: controller.onVerticalDragEnd,
           //onLongPress: controller.showDebugInfo,
-          child: MouseRegion(
+          child: Obx(() => MouseRegion(
             onEnter: controller.onEnter,
+            cursor: Platform.isWindows && 
+                   controller.fullScreenState.value && 
+                   !controller.showMouseCursor.value
+                ? SystemMouseCursors.none 
+                : SystemMouseCursors.basic,
             child: Listener(
               onPointerSignal: (PointerSignalEvent event) {
                 if (Platform.isWindows && event is PointerScrollEvent) {
@@ -524,7 +534,7 @@ Widget buildControls(
                 color: Colors.transparent,
               ),
             ),
-          ),
+          )),
         ),
       ),
       Obx(
