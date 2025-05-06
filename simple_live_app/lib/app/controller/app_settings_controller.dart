@@ -146,6 +146,12 @@ class AppSettingsController extends GetxController {
     huyaCdn.value = LocalStorageService.instance
         .getValue(LocalStorageService.kHuyaCDN, "");
 
+    userInactivityDetectionEnable.value = LocalStorageService.instance
+        .getValue(LocalStorageService.kUserInactivityDetectionEnable, false);
+
+    userInactivityDetectionDuration.value = LocalStorageService.instance
+        .getValue(LocalStorageService.kUserInactivityDetectionDuration, 30);
+
     initSiteSort();
     initHomeSort();
     super.onInit();
@@ -537,5 +543,19 @@ class AppSettingsController extends GetxController {
     huyaCdn.value = e;
     LocalStorageService.instance
         .setValue(LocalStorageService.kHuyaCDN, e);
+  }
+
+  var userInactivityDetectionEnable = false.obs;
+  void setUserInactivityDetectionEnable(bool e) {
+    userInactivityDetectionEnable.value = e;
+    LocalStorageService.instance
+        .setValue(LocalStorageService.kUserInactivityDetectionEnable, e);
+  }
+
+  var userInactivityDetectionDuration = 30.obs;
+  void setUserInactivityDetectionDuration(int e) {
+    userInactivityDetectionDuration.value = e;
+    LocalStorageService.instance
+        .setValue(LocalStorageService.kUserInactivityDetectionDuration, e);
   }
 }

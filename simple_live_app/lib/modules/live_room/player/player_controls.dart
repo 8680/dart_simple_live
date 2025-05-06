@@ -36,6 +36,53 @@ Widget playerControls(
   });
 }
 
+/// 用户不活动提示对话框
+Widget buildInactivityDialog(LiveRoomController controller) {
+  return Obx(() {
+    if (!controller.showInactivityDialog.value) {
+      return Container();
+    }
+    
+    return Center(
+      child: Container(
+        width: 300,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "您还在观看吗？",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "如无操作，应用将在${controller.inactivityDialogCountdown.value}秒后关闭",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: controller.continueWatching,
+              child: const Text("继续观看"),
+            ),
+          ],
+        ),
+      ),
+    );
+  });
+}
+
 Widget buildFullControls(
   VideoState videoState,
   LiveRoomController controller,
@@ -61,6 +108,10 @@ Widget buildFullControls(
             ),
           ),
         ),
+        
+        // 添加用户不活动提示对话框
+        buildInactivityDialog(controller),
+        
         Positioned.fill(
           child: GestureDetector(
             onTap: controller.onTap,
@@ -440,6 +491,10 @@ Widget buildControls(
           ),
         ),
       ),
+      
+      // 添加用户不活动提示对话框
+      buildInactivityDialog(controller),
+      
       Positioned.fill(
         child: GestureDetector(
           onTap: controller.onTap,

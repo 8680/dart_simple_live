@@ -275,6 +275,69 @@ class PlaySettingsPage extends GetView<AppSettingsController> {
               ],
             ),
           ),
+          Padding(
+            padding: AppStyle.edgeInsetsA12.copyWith(top: 24),
+            child: Text(
+              "自动关闭",
+              style: Get.textTheme.titleSmall,
+            ),
+          ),
+          SettingsCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Obx(
+                  () => SettingsSwitch(
+                    title: "用户不活动检测",
+                    subtitle: "当用户长时间不操作时提示并关闭应用",
+                    value: controller.userInactivityDetectionEnable.value,
+                    onChanged: (e) {
+                      controller.setUserInactivityDetectionEnable(e);
+                    },
+                  ),
+                ),
+                AppStyle.divider,
+                Obx(
+                  () => SettingsNumber(
+                    title: "不活动检测时间",
+                    subtitle: "多长时间无操作后提示用户（分钟）",
+                    value: controller.userInactivityDetectionDuration.value,
+                    min: 5,
+                    max: 120,
+                    step: 5,
+                    unit: "分钟",
+                    onChanged: (e) {
+                      controller.setUserInactivityDetectionDuration(e);
+                    },
+                  ),
+                ),
+                AppStyle.divider,
+                Obx(
+                  () => SettingsSwitch(
+                    title: "定时关闭",
+                    value: controller.autoExitEnable.value,
+                    onChanged: (e) {
+                      controller.setAutoExitEnable(e);
+                    },
+                  ),
+                ),
+                AppStyle.divider,
+                Obx(
+                  () => SettingsNumber(
+                    title: "定时关闭",
+                    value: controller.autoExitDuration.value,
+                    min: 15,
+                    max: 120,
+                    step: 15,
+                    unit: "分钟",
+                    onChanged: (e) {
+                      controller.setAutoExitDuration(e);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

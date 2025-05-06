@@ -105,6 +105,18 @@ mixin PlayerStateMixin on PlayerMixin {
   /// 自动隐藏提示计时器
   Timer? hideSeekTipTimer;
 
+  /// 用户不活动检测计时器
+  Timer? userInactivityTimer;
+
+  /// 是否显示用户不活动提示对话框
+  RxBool showInactivityDialog = false.obs;
+
+  /// 用户不活动检测对话框计时器
+  Timer? inactivityDialogTimer;
+
+  /// 用户不活动对话框剩余时间
+  RxInt inactivityDialogCountdown = 30.obs;
+
   /// 是否为竖屏直播间
   var isVertical = false.obs;
 
@@ -171,6 +183,91 @@ mixin PlayerStateMixin on PlayerMixin {
       aspectRatio: aspectRatio,
       fit: boxFit,
     );
+  }
+
+  /// 开始用户不活动检测
+  void startUserInactivityDetection() {
+    // 如果不活动检测未启用，则不启动
+    if (!AppSettingsController.instance.userInactivityDetectionEnable.value) {
+      return;
+    }
+    
+    // 取消之前的定时器
+    userInactivityTimer?.cancel();
+    
+    // 设置新的定时器，时长为设置中的不活动检测时间（分钟）
+    userInactivityTimer = Timer(
+      Duration(
+        minutes: AppSettingsController.instance.userInactivityDetectionDuration.value,
+      ),
+      showUserInactivityDialog,
+    );
+  }
+
+  /// 重置用户不活动检测
+  void resetUserInactivityDetection() {
+    // 如果不活动检测未启用，则不重置
+    if (!AppSettingsController.instance.userInactivityDetectionEnable.value) {
+      return;
+    }
+    
+    // 取消之前的定时器并启动新的检测
+    userInactivityTimer?.cancel();
+    startUserInactivityDetection();
+  }
+
+  /// 显示用户不活动提示对话框
+  void showUserInactivityDialog() {
+    // 显示对话框
+    showInactivityDialog.value = true;
+    
+    // 设置倒计时初始值为30秒
+    inactivityDialogCountdown.value = 30;
+    
+    // 取消之前的对话框计时器
+    inactivityDialogTimer?.cancel();
+    
+    // 启动对话框倒计时计时器
+    inactivityDialogTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+        if (inactivityDialogCountdown.value <= 0) {
+          // 如果倒计时结束，关闭应用
+          closeApp();
+        } else {
+          // 倒计时减1
+          inactivityDialogCountdown.value--;
+        }
+      },
+    );
+  }
+
+  /// 用户响应了不活动提示，继续观看
+  void continueWatching() {
+    // 隐藏对话框
+    showInactivityDialog.value = false;
+    
+    // 取消对话框倒计时计时器
+    inactivityDialogTimer?.cancel();
+    
+    // 重置不活动检测
+    resetUserInactivityDetection();
+  }
+
+  /// 关闭应用
+  void closeApp() {
+    // 取消所有计时器
+    hideControlsTimer?.cancel();
+    hideSeekTipTimer?.cancel();
+    userInactivityTimer?.cancel();
+    inactivityDialogTimer?.cancel();
+    
+    // 关闭应用
+    player.stop();
+    WakelockPlus.disable();
+    
+    // 返回到上一页面
+    Get.back();
   }
 }
 mixin PlayerDanmakuMixin on PlayerStateMixin {
@@ -497,6 +594,8 @@ mixin PlayerGestureControlMixin
     } else {
       showControls();
     }
+    // 重置不活动检测
+    resetUserInactivityDetection();
   }
 
   //桌面端操控
@@ -504,6 +603,8 @@ mixin PlayerGestureControlMixin
     if (!showControlsState.value) {
       showControls();
     }
+    // 重置不活动检测
+    resetUserInactivityDetection();
   }
 
   void onExit(PointerExitEvent event) {
@@ -520,6 +621,8 @@ mixin PlayerGestureControlMixin
       if (!showControlsState.value) {
         showControls();
       }
+      // 重置不活动检测
+      resetUserInactivityDetection();
     }
   }
 
@@ -533,6 +636,8 @@ mixin PlayerGestureControlMixin
     } else {
       enterFullScreen();
     }
+    // 重置不活动检测
+    resetUserInactivityDetection();
   }
 
   bool verticalDragging = false;
@@ -568,6 +673,9 @@ mixin PlayerGestureControlMixin
     if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
       _currentBrightness = await ScreenBrightness.instance.application;
     }
+    
+    // 重置不活动检测
+    resetUserInactivityDetection();
   }
 
   /// 竖向手势更新
@@ -681,6 +789,8 @@ class PlayerController extends BaseController
     initStream();
     //设置音量
     player.setVolume(AppSettingsController.instance.playerVolume.value);
+    // 启动用户不活动检测
+    startUserInactivityDetection();
     super.onInit();
   }
 
@@ -855,6 +965,9 @@ class PlayerController extends BaseController
     if (smallWindowState.value) {
       exitSmallWindow();
     }
+    // 取消用户不活动检测相关计时器
+    userInactivityTimer?.cancel();
+    inactivityDialogTimer?.cancel();
     disposeStream();
     disposeDanmakuController();
     await resetSystem();

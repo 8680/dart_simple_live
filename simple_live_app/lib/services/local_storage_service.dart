@@ -168,6 +168,12 @@ class LocalStorageService extends GetxService {
   /// 虎牙直播CDN选择
   static const String kHuyaCDN = "kHuyaCDN";
 
+  /// 用户不活动检测启用
+  static const String kUserInactivityDetectionEnable = "kUserInactivityDetectionEnable";
+
+  /// 用户不活动检测时间（分钟）
+  static const String kUserInactivityDetectionDuration = "kUserInactivityDetectionDuration";
+
   late Box settingsBox;
   late Box<String> shieldBox;
 
