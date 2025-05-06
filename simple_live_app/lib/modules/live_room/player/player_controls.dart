@@ -125,15 +125,14 @@ Widget buildFullControls(
             onVerticalDragStart: controller.onVerticalDragStart,
             onVerticalDragUpdate: controller.onVerticalDragUpdate,
             onVerticalDragEnd: controller.onVerticalDragEnd,
-            child: Obx(() => MouseRegion(
+            child: MouseRegion(
               onHover: (PointerHoverEvent event) {
                 controller.onHover(event, videoState.context);
+                if (Platform.isWindows && controller.fullScreenState.value) {
+                  controller.showCursor();
+                  controller.resetCursorHideTimer();
+                }
               },
-              cursor: Platform.isWindows && 
-                     controller.fullScreenState.value && 
-                     !controller.showMouseCursor.value
-                  ? SystemMouseCursors.none 
-                  : SystemMouseCursors.basic,
               child: Listener(
                 onPointerSignal: (PointerSignalEvent event) {
                   if (Platform.isWindows && event is PointerScrollEvent) {
@@ -156,7 +155,7 @@ Widget buildFullControls(
                   // ),
                 ),
               ),
-            )),
+            ),
           ),
         ),
 
@@ -515,13 +514,8 @@ Widget buildControls(
           onVerticalDragUpdate: controller.onVerticalDragUpdate,
           onVerticalDragEnd: controller.onVerticalDragEnd,
           //onLongPress: controller.showDebugInfo,
-          child: Obx(() => MouseRegion(
+          child: MouseRegion(
             onEnter: controller.onEnter,
-            cursor: Platform.isWindows && 
-                   controller.fullScreenState.value && 
-                   !controller.showMouseCursor.value
-                ? SystemMouseCursors.none 
-                : SystemMouseCursors.basic,
             child: Listener(
               onPointerSignal: (PointerSignalEvent event) {
                 if (Platform.isWindows && event is PointerScrollEvent) {
@@ -534,7 +528,7 @@ Widget buildControls(
                 color: Colors.transparent,
               ),
             ),
-          )),
+          ),
         ),
       ),
       Obx(
