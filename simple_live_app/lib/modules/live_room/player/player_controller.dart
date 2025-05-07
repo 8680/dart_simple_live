@@ -289,14 +289,31 @@ mixin PlayerStateMixin on PlayerMixin {
 
   /// 用户响应了不活动提示，继续观看
   void continueWatching() {
-    // 隐藏对话框
-    showInactivityDialog.value = false;
-    
-    // 取消对话框倒计时计时器
-    inactivityDialogTimer?.cancel();
-    
-    // 重置不活动检测
-    resetUserInactivityDetection();
+    try {
+      // 隐藏对话框
+      showInactivityDialog.value = false;
+      
+      // 取消对话框倒计时计时器
+      inactivityDialogTimer?.cancel();
+      
+      // 重置不活动检测
+      resetUserInactivityDetection();
+
+      // 额外的处理，确保在移动平台上也能正确响应
+      if (Platform.isAndroid || Platform.isIOS) {
+        // 重置任何可能的手势状态
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+        
+        // 确保UI刷新 - 使用refresh()而不是update()
+        Future.delayed(const Duration(milliseconds: 100), () {
+          // 刷新observable变量以触发UI更新
+          var temp = showInactivityDialog.value;
+          showInactivityDialog.value = temp;
+        });
+      }
+    } catch (e) {
+      Log.w("继续观看时出错: $e");
+    }
   }
 
   /// 关闭应用

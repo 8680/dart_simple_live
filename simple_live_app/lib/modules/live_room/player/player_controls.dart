@@ -43,40 +43,53 @@ Widget buildInactivityDialog(LiveRoomController controller) {
       return Container();
     }
     
-    return Center(
-      child: Container(
-        width: 300,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "您还在观看吗？",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+    // 使用Material增加点击效果，避免透明区域点击问题
+    return Material(
+      type: MaterialType.transparency,
+      child: GestureDetector(
+        // 捕获所有点击事件，防止点击事件穿透到下层
+        behavior: HitTestBehavior.opaque,
+        // 点击弹窗外区域不做任何处理，保持弹窗显示
+        onTap: () {},
+        child: Center(
+          child: Container(
+            width: 300,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 20),
-            Text(
-              "如无操作，应用将在${controller.inactivityDialogCountdown.value}秒后关闭",
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "您还在观看吗？",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  "如无操作，应用将在${controller.inactivityDialogCountdown.value}秒后关闭",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: controller.continueWatching,
+                    child: const Text("继续观看"),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: controller.continueWatching,
-              child: const Text("继续观看"),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -108,9 +121,6 @@ Widget buildFullControls(
             ),
           ),
         ),
-        
-        // 添加用户不活动提示对话框
-        buildInactivityDialog(controller),
         
         Positioned.fill(
           child: GestureDetector(
@@ -447,6 +457,9 @@ Widget buildFullControls(
             ),
           ),
         ),
+
+        // 将弹窗放在最后，确保它位于最顶层
+        buildInactivityDialog(controller),
       ],
     ),
   );
@@ -502,9 +515,6 @@ Widget buildControls(
           ),
         ),
       ),
-      
-      // 添加用户不活动提示对话框
-      buildInactivityDialog(controller),
       
       Positioned.fill(
         child: GestureDetector(
@@ -715,6 +725,9 @@ Widget buildControls(
           ),
         ),
       ),
+
+      // 将弹窗放在最后，确保它位于最顶层
+      buildInactivityDialog(controller),
     ],
   );
 }
