@@ -22,6 +22,7 @@ import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/utils.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:flutter/rendering.dart';
 
 mixin PlayerMixin {
   GlobalKey<VideoState> globalPlayerKey = GlobalKey<VideoState>();
@@ -109,6 +110,12 @@ mixin PlayerStateMixin on PlayerMixin {
   /// 用户不活动检测计时器
   Timer? userInactivityTimer;
 
+  /// 鼠标指针隐藏计时器
+  Timer? mouseCursorHideTimer;
+
+  /// 鼠标指针是否已隐藏
+  RxBool isCursorHidden = false.obs;
+
   /// 是否显示用户不活动提示对话框
   RxBool showInactivityDialog = false.obs;
 
@@ -120,12 +127,6 @@ mixin PlayerStateMixin on PlayerMixin {
 
   /// 是否为竖屏直播间
   var isVertical = false.obs;
-
-  /// 鼠标指针是否隐藏
-  var isCursorHidden = false.obs;
-  
-  /// 鼠标指针自动隐藏计时器
-  Timer? cursorHideTimer;
 
   Widget? danmakuView;
 
@@ -150,13 +151,6 @@ mixin PlayerStateMixin on PlayerMixin {
   /// 显示控制器
   void showControls() {
     showControlsState.value = true;
-    
-    // 全屏模式下显示鼠标指针
-    if (Platform.isWindows && fullScreenState.value) {
-      showCursor();
-      resetCursorHideTimer();
-    }
-    
     resetHideControlsTimer();
   }
 
@@ -173,37 +167,37 @@ mixin PlayerStateMixin on PlayerMixin {
     );
   }
 
-  /// 在Windows上隐藏鼠标指针
-  void hideCursor() {
-    if (Platform.isWindows && !isCursorHidden.value) {
-      SystemChannels.platform.invokeMethod('SystemCursor.hide');
+  /// 开始隐藏鼠标指针计时
+  void resetHideMouseCursorTimer() {
+    // 只在全屏模式下启用鼠标指针隐藏
+    if (!fullScreenState.value && !windowFullScreenState.value) {
+      showMouseCursor();
+      return;
+    }
+    
+    mouseCursorHideTimer?.cancel();
+    
+    // 显示鼠标指针
+    showMouseCursor();
+    
+    // 设置5秒后隐藏鼠标指针
+    mouseCursorHideTimer = Timer(
+      const Duration(seconds: 5),
+      hideMouseCursor,
+    );
+  }
+  
+  /// 隐藏鼠标指针
+  void hideMouseCursor() {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       isCursorHidden.value = true;
     }
   }
-
-  /// 在Windows上显示鼠标指针
-  void showCursor() {
-    if (Platform.isWindows && isCursorHidden.value) {
-      SystemChannels.platform.invokeMethod('SystemCursor.show');
-      isCursorHidden.value = false;
-    }
-  }
   
-  /// 重置鼠标指针隐藏计时器
-  void resetCursorHideTimer() {
-    cursorHideTimer?.cancel();
-    
-    // 仅在Windows全屏模式下设置隐藏计时器
-    if (Platform.isWindows && fullScreenState.value && !windowFullScreenState.value) {
-      cursorHideTimer = Timer(
-        const Duration(seconds: 5),
-        () {
-          // 仅在全屏模式下隐藏鼠标指针
-          if (fullScreenState.value && !windowFullScreenState.value) {
-            hideCursor();
-          }
-        },
-      );
+  /// 显示鼠标指针
+  void showMouseCursor() {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      isCursorHidden.value = false;
     }
   }
 
@@ -250,6 +244,9 @@ mixin PlayerStateMixin on PlayerMixin {
       ),
       showUserInactivityDialog,
     );
+    
+    // 初始化鼠标指针隐藏计时器
+    resetHideMouseCursorTimer();
   }
 
   /// 重置用户不活动检测
@@ -318,7 +315,7 @@ mixin PlayerStateMixin on PlayerMixin {
     Get.back();
   }
 }
-mixin PlayerDanmakuMixin on PlayerMixin, PlayerStateMixin {
+mixin PlayerDanmakuMixin on PlayerStateMixin {
   /// 弹幕控制器
   DanmakuController? danmakuController;
 
@@ -412,11 +409,6 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
       }
     }
 
-    if (Platform.isWindows) {
-      showCursor();
-      cursorHideTimer?.cancel();
-    }
-
     await WakelockPlus.disable();
   }
 
@@ -433,12 +425,11 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
       }
     } else {
       windowManager.setFullScreen(true);
-      // 仅在Windows全屏模式下隐藏鼠标指针
-      if (Platform.isWindows) {
-        resetCursorHideTimer();
-      }
     }
     //danmakuController?.clear();
+    
+    // 全屏模式下启动鼠标指针隐藏计时器
+    resetHideMouseCursorTimer();
   }
 
   /// 退出全屏
@@ -449,34 +440,34 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
       setPortraitOrientation();
     } else {
       windowManager.setFullScreen(false);
-      // 退出全屏时显示鼠标指针
-      if (Platform.isWindows) {
-        showCursor();
-        cursorHideTimer?.cancel();
-      }
     }
     fullScreenState.value = false;
     windowFullScreenState.value = false;
 
     //danmakuController?.clear();
+    
+    // 退出全屏时显示鼠标指针
+    showMouseCursor();
   }
   
   /// 进入窗口全屏
   void enterWindowFullScreen() {
     windowFullScreenState.value = true;
     fullScreenState.value = false;
-    // 窗口全屏模式下需要确保鼠标指针可见
-    if (Platform.isWindows) {
-      showCursor();
-    }
     // 不需要调用系统全屏API，只需要在UI层面处理
     //danmakuController?.clear();
+    
+    // 窗口全屏模式下启动鼠标指针隐藏计时器
+    resetHideMouseCursorTimer();
   }
   
   /// 退出窗口全屏
   void exitWindowFullScreen() {
     windowFullScreenState.value = false;
     //danmakuController?.clear();
+    
+    // 退出窗口全屏时显示鼠标指针
+    showMouseCursor();
   }
 
   Size? _lastWindowSize;
@@ -660,15 +651,10 @@ mixin PlayerGestureControlMixin
     } else {
       showControls();
     }
-    
-    // 全屏模式下显示鼠标指针
-    if (Platform.isWindows && fullScreenState.value) {
-      showCursor();
-      resetCursorHideTimer();
-    }
-    
     // 重置不活动检测
     resetUserInactivityDetection();
+    // 重置鼠标指针隐藏计时器
+    resetHideMouseCursorTimer();
   }
 
   //桌面端操控
@@ -678,6 +664,8 @@ mixin PlayerGestureControlMixin
     }
     // 重置不活动检测
     resetUserInactivityDetection();
+    // 重置鼠标指针隐藏计时器
+    resetHideMouseCursorTimer();
   }
 
   void onExit(PointerExitEvent event) {
@@ -696,6 +684,8 @@ mixin PlayerGestureControlMixin
       }
       // 重置不活动检测
       resetUserInactivityDetection();
+      // 重置鼠标指针隐藏计时器
+      resetHideMouseCursorTimer();
     }
   }
 
@@ -709,15 +699,10 @@ mixin PlayerGestureControlMixin
     } else {
       enterFullScreen();
     }
-    
-    // 全屏模式下显示鼠标指针
-    if (Platform.isWindows && fullScreenState.value) {
-      showCursor();
-      resetCursorHideTimer();
-    }
-    
     // 重置不活动检测
     resetUserInactivityDetection();
+    // 重置鼠标指针隐藏计时器
+    resetHideMouseCursorTimer();
   }
 
   bool verticalDragging = false;
@@ -898,6 +883,8 @@ mixin PlayerGestureControlMixin
     
     // 重置不活动检测
     resetUserInactivityDetection();
+    // 重置鼠标指针隐藏计时器
+    resetHideMouseCursorTimer();
   }
 }
 
@@ -1097,6 +1084,10 @@ class PlayerController extends BaseController
     disposeDanmakuController();
     await resetSystem();
     await player.dispose();
+    // 显示鼠标指针
+    showMouseCursor();
+    // 取消鼠标指针隐藏计时器
+    mouseCursorHideTimer?.cancel();
     super.onClose();
   }
 }
