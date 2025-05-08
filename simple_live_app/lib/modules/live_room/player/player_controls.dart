@@ -378,22 +378,25 @@ Widget buildFullControls(
                       style: const TextStyle(color: Colors.white, fontSize: 15),
                     ),
                   ),
-                  Obx(
-                    () => IconButton(
-                      onPressed: () {
-                        if (controller.windowFullScreenState.value) {
-                          controller.exitWindowFullScreen();
-                        } else {
-                          controller.enterWindowFullScreen();
-                        }
-                      },
-                      icon: Icon(
-                        controller.windowFullScreenState.value
-                            ? Remix.fullscreen_exit_line
-                            : Remix.computer_line,
-                        color: Colors.white,
+                  Visibility(
+                    visible: !Platform.isIOS && !Platform.isAndroid,
+                    child: Obx(
+                      () => IconButton(
+                        onPressed: () {
+                          if (controller.windowFullScreenState.value) {
+                            controller.exitWindowFullScreen();
+                          } else {
+                            controller.enterWindowFullScreen();
+                          }
+                        },
+                        icon: Icon(
+                          controller.windowFullScreenState.value
+                              ? Remix.fullscreen_exit_line
+                              : Remix.computer_line,
+                          color: Colors.white,
+                        ),
+                        tooltip: controller.windowFullScreenState.value ? "退出窗口全屏" : "窗口全屏",
                       ),
-                      tooltip: controller.windowFullScreenState.value ? "退出窗口全屏" : "窗口全屏",
                     ),
                   ),
                   IconButton(
@@ -666,22 +669,25 @@ Widget buildControls(
                     ),
                   ),
                 ),
-                Obx(
-                  () => IconButton(
-                    onPressed: () {
-                      if (controller.windowFullScreenState.value) {
-                        controller.exitWindowFullScreen();
-                      } else {
-                        controller.enterWindowFullScreen();
-                      }
-                    },
-                    icon: Icon(
-                      controller.windowFullScreenState.value
-                          ? Remix.fullscreen_exit_line
-                          : Remix.computer_line,
-                      color: Colors.white,
+                Visibility(
+                  visible: !Platform.isIOS && !Platform.isAndroid,
+                  child: Obx(
+                    () => IconButton(
+                      onPressed: () {
+                        if (controller.windowFullScreenState.value) {
+                          controller.exitWindowFullScreen();
+                        } else {
+                          controller.enterWindowFullScreen();
+                        }
+                      },
+                      icon: Icon(
+                        controller.windowFullScreenState.value
+                            ? Remix.fullscreen_exit_line
+                            : Remix.computer_line,
+                        color: Colors.white,
+                      ),
+                      tooltip: controller.windowFullScreenState.value ? "退出窗口全屏" : "窗口全屏",
                     ),
-                    tooltip: controller.windowFullScreenState.value ? "退出窗口全屏" : "窗口全屏",
                   ),
                 ),
                 Obx(
